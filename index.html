@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ISURUX GAMING TOPUP STORE</title>
+  <style>
+    *{box-sizing:border-box} body{margin:0;font-family:system-ui;background:#081126;color:#eef4ff}
+    .wrap{max-width:520px;margin:auto;padding:24px 16px}.card{background:#101d3b;border:1px solid #263b69;border-radius:20px;padding:20px;margin:14px 0}
+    h1{font-size:26px;margin:0 0 6px}.muted{color:#a9b8d8}.field{margin:14px 0}label{display:block;margin-bottom:7px}
+    input,select,button{width:100%;padding:14px;border-radius:12px;border:1px solid #355080;background:#0b1730;color:white;font-size:16px}
+    button{background:#2787ff;border:0;font-weight:700;cursor:pointer}.ok{color:#38e6a1}.err{color:#ff7d91}
+    .pkg{padding:12px;border:1px solid #355080;border-radius:12px;margin:8px 0}.small{font-size:13px}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+    <h1>🇱🇰 ISURUX GAMING</h1>
+    <div class="muted">FREE FIRE TOP-UP STORE</div>
+  </div>
+
+  <div class="card">
+    <div class="field">
+      <label>Free Fire UID</label>
+      <input id="uid" inputmode="numeric" placeholder="Enter Player UID">
+    </div>
+    <button id="verify">Verify Player ID</button>
+    <p id="verifyMsg" class="small muted">UID verification will be connected to the provider's official verification endpoint.</p>
+  </div>
+
+  <div class="card">
+    <div class="field"><label>Diamond package</label><select id="product"></select></div>
+    <div id="packages" class="small muted">Loading Shell products...</div>
+  </div>
+
+  <div class="card">
+    <h3>eZ Cash</h3>
+    <p class="muted small">Payment must be confirmed by the official merchant/gateway before a Shell order is sent.</p>
+    <button id="pay">Pay with eZ Cash</button>
+    <p id="result" class="small"></p>
+  </div>
+</div>
+
+<script>
+let catalog = null;
+const $ = id => document.getElementById(id);
+
+async function loadGames(){
+  const r = await fetch("/api/shell/games");
+  const d = await r.json();
+  if(!r.ok) throw new Error(d.error || "Could not load products");
+  catalog = d.games || [];
+  const game = catalog.find(g => /free.?fire/i.test((g.name||"") + " " + (g.slug||""))) || catalog[0];
+  if(!game) throw new Error("No game available");
+  $("product").innerHTML = "";
+  (game.products||[]).forEach(p => {
+    const o = document.createElement("option");
+    o.value = p.id;
+    o.textContent = p.name || p.id;
+    o.dataset.gameId = game.id;
+    $("product").appendChild(o);
+  });
+  $("packages").textContent = `Loaded ${game.products?.length || 0} products from Shell Topup.`;
+}
+loadGames().catch(e => $("packages").textContent = e.message);
+
+$("verify").onclick = () => {
+  const uid = $("uid").value.trim();
+  if(!/^\d{5,20}$/.test(uid)) {
+    $("verifyMsg").className="small err";
+    $("verifyMsg").textContent="Enter a valid Player UID.";
+    return;
+  }
+  $("verifyMsg").className="small";
+  $("verifyMsg").textContent="UID format looks valid. Provider-side nickname verification still needs the official verification endpoint.";
+};
+
+$("pay").onclick = async () => {
+  $("result").className="small";
+  $("result").textContent="eZ Cash gateway integration needs your official merchant/gateway API details.";
+};
+</script>
+</body>
+</html>
